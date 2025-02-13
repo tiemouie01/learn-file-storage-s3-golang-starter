@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,15 +60,11 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Create the thumbnail struct and update the video in the db
-	videoThumbnail := thumbnail{
-		data:      fileData,
-		mediaType: mediaType,
-	}
-	videoThumbnails[videoID] = videoThumbnail
+	// Create a base64 encoded string to store in the database
+	convertedFileData := base64.StdEncoding.EncodeToString(fileData)
+	dataUrl := "data:" + mediaType + ";base64," + convertedFileData
 
-	thumbnailUrl := "http://localhost:" + cfg.port + "/api/thumbnails/" + videoID.String()
-	video.ThumbnailURL = &thumbnailUrl
+	video.ThumbnailURL = &dataUrl
 
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
