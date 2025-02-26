@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -134,4 +138,39 @@ func main() {
 
 	log.Printf("Serving on: http://localhost:%s/app/\n", port)
 	log.Fatal(srv.ListenAndServe())
+}
+
+type FFProbeOutput struct {
+	Streams []struct {
+		DisplayAspectRatio string `json:"display_aspect_ratio"`
+	} `json:"streams"`
+}
+
+func getVideoAspectRatio(filePath string) (string, error) {
+	command := exec.Command("ffprobe", "-v", "error", "-print_format", "json", "-show_streams", filePath)
+	var stdout bytes.Buffer
+	command.Stdout = &stdout
+	if err := command.Run(); err != nil {
+		log.Print("Error: Failed to execute ffprobe command in terminal")
+		return "", err
+	}
+
+	var data FFProbeOutput
+	if err := json.Unmarshal(stdout.Bytes(), &data); err != nil {
+		log.Print("Error: Failed to unmarshal json from the ffprobe command")
+		return "", err
+	}
+
+	if len(data.Streams) == 0 {
+		return "", fmt.Errorf("no streams found in video file")
+	}
+
+	switch data.Streams[0].DisplayAspectRatio {
+	case "16:9":
+		return "16:9", nil
+	case "9:16":
+		return "9:16", nil
+	default:
+		return "other", nil
+	}
 }
