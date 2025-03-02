@@ -276,7 +276,7 @@ function viewVideo(video) {
       videoPlayer.style.display = "none";
     } else {
       videoPlayer.style.display = "block";
-      videoPlayer.src = `/${video.video_url}`;
+      videoPlayer.src = `${video.video_url}`;
       videoPlayer.load();
     }
   }
